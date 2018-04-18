@@ -18,6 +18,9 @@ public class ScheduleTask {
 	private static double effThreshold=0;
 	private static double INT_MAX=1000000,INT_MIN=-1;
 	
+	ScheduleTask() {
+		
+	}
 	
 	private static DatacenterBroker createBroker(int id){
 
@@ -41,6 +44,7 @@ public class ScheduleTask {
 			}
 		}
 	}
+	
 	private static void Set_Efficiency() {
 		efficiency=new ArrayList<List<Double>>(num_vms);
 		Double[]min_efficiency=new Double[num_vms];
@@ -200,6 +204,7 @@ public class ScheduleTask {
 	}
 	public static void main(String[] args) {
 		try {
+			ScheduleTask schedular=new ScheduleTask();
 			Calendar calendar = Calendar.getInstance();
 			boolean trace_flag = false;  // mean trace events
 			int num_user=3;
@@ -220,8 +225,8 @@ public class ScheduleTask {
 //			@SuppressWarnings("unused")
 //			Datacenter datacenter4 = createDatacenter("Datacenter_4");
 
-			Initialize();
-			Set_Grid();
+			schedular.Initialize();
+			schedular.Set_Grid();       
 			Set_Efficiency();
 			while(!Completed()) {
 				int pmin=0;
