@@ -7,7 +7,7 @@ import org.cloudbus.cloudsim.provisioners.PeProvisionerSimple;
 import org.cloudbus.cloudsim.provisioners.RamProvisionerSimple;
 public class ScheduleTask {
 //	private static List<Cloudlet> cloudletListArray;
-	private static List<List<Cloudlet>> cloudletListArray ;
+	private static List<List<Cloudlet>> cloudletListArray;
 	private static List<List<Vm>> vmListArray;
 	private static List<DatacenterBroker> brokerListArray;
 	private static List<List<Double>> matrix,efficiency;
@@ -31,23 +31,34 @@ public class ScheduleTask {
 			e.printStackTrace();
 			return null;
 		}
+//		System.out.println(broker);
 		return broker;
 	}
 	
 	private static void Set_Grid() {
-		matrix=new ArrayList<List<Double>>(num_vms);
+		matrix=new ArrayList<List<Double>>();
+		for(int i=0;i<num_vms;i++) {
+			matrix.add(new ArrayList<Double>());
+		}
 		for(int i=0;i<num_vms;i++) {
 			for(int j=0;j<num_cloudlets;j++) {
-				Log.printLine(lengths.get(j)); 
+				Log.printLine("length = "+ j+ " " + lengths.get(j)); 
 				Double execution_time=((double)(lengths.get(j)/Mips.get(i)));
 				matrix.get(i).add(execution_time);
 			}
 		}
+		
 	}
 	
+	
 	private static void Set_Efficiency() {
-		efficiency=new ArrayList<List<Double>>(num_vms);
-		Double[]min_efficiency=new Double[num_vms];
+		efficiency=new ArrayList<List<Double>>();
+		availableTime=new ArrayList<Double>();
+		for(int i=0;i<num_vms;i++) {
+			efficiency.add(new ArrayList<Double>());
+		}
+
+		Double[] min_efficiency=new Double[num_vms];
 		for(int i=0;i<num_vms;i++) {
 			min_efficiency[i]=matrix.get(i).get(0);
 		}
@@ -63,11 +74,12 @@ public class ScheduleTask {
 		for(int i=0;i<num_vms;i++) {
 			availableTime.add(0.0);
 		}
+		
 	}
 	private static void Initialize() {
 		try {
-			num_cloudlets=15;
-			num_vms=10;
+			num_cloudlets=5;
+			num_vms=1;
 			numScheduledTask=0;
 			int[] brokerId= new int[num_cloudlets];
 	//		int broker_temp_value_for_now=1; // this needs to be figured out
@@ -81,9 +93,15 @@ public class ScheduleTask {
 			long outputSize = 300;
 			int pesNumber=1; //number of cpus
 			String vmm = "Xen"; //VMM name
-			
+//			cloudletListArray=new ArraList<>
+			cloudletListArray=new ArrayList<List<Cloudlet>>();
+			vmListArray=new ArrayList<List<Vm>>();
+			brokerListArray=new ArrayList<DatacenterBroker>();
+			Mips=new ArrayList<Integer>();
+			lengths=new ArrayList<Long>();
 			for(int i=0;i<num_vms;i++) {
 				DatacenterBroker broker=createBroker(i);
+//				System.out.println(broker);
 	//			broker.submitVmList(vmListArray.get(i));
 				brokerListArray.add(broker);
 				brokerId[i]=brokerListArray.get(i).getId();
@@ -91,7 +109,8 @@ public class ScheduleTask {
 			
 			for(int i=0;i<num_vms;i++) {
 				vmid=i;
-				mips=(int) Math.floor(Math.random()*512)+512;
+//				mips=(int) Math.floor(Math.random()*512)+512;
+				mips=250;
 				Vm vm = new Vm(vmid, brokerId[i], mips, pesNumber, ram, bw, size, vmm, new CloudletSchedulerTimeShared());
 				List<Vm> vms=new ArrayList<Vm>();
 				vms.add(vm);
@@ -202,12 +221,28 @@ public class ScheduleTask {
 
 		return datacenter;
 	}
+	public static void print() {
+		for(int i=0;i<num_vms;i++) {
+			for(int j=0;j<num_cloudlets;j++) {
+				Log.print(matrix.get(i).get(j)+ " "); 
+//				Double execution_time=((double)(lengths.get(j)/Mips.get(i)));
+//				matrix.get(i).add(execution_time);
+			}
+			Log.print("\n");
+		}
+		for(int i=0;i<num_vms;i++) {
+			for(int j=0;j<num_cloudlets;j++) {
+					Log.print(efficiency.get(i).get(j)+ " ");
+			}
+			Log.print("\n");
+		}
+	}
 	public static void main(String[] args) {
 		try {
 			ScheduleTask schedular=new ScheduleTask();
 			Calendar calendar = Calendar.getInstance();
 			boolean trace_flag = false;  // mean trace events
-			int num_user=3;
+			int num_user=1;
 			// Initialize the CloudSim library
 			
 			CloudSim.init(num_user, calendar, trace_flag);
@@ -216,18 +251,20 @@ public class ScheduleTask {
 			//Datacenters are the resource providers in CloudSim. We need at list one of them to run a CloudSim simulation
 			@SuppressWarnings("unused")
 			Datacenter datacenter0 = createDatacenter("Datacenter_0");
-			@SuppressWarnings("unused")
-			Datacenter datacenter1 = createDatacenter("Datacenter_1");
-			@SuppressWarnings("unused")
-			Datacenter datacenter2 = createDatacenter("Datacenter_2");
+//			@SuppressWarnings("unused")
+//			Datacenter datacenter1 = createDatacenter("Datacenter_1");
+//			@SuppressWarnings("unused")
+//			Datacenter datacenter2 = createDatacenter("Datacenter_2");
 //			@SuppressWarnings("unused")
 //			Datacenter datacenter3 = createDatacenter("Datacenter_3");
 //			@SuppressWarnings("unused")
 //			Datacenter datacenter4 = createDatacenter("Datacenter_4");
 
-			schedular.Initialize();
-			schedular.Set_Grid();       
+			Initialize();
+			Set_Grid();       
 			Set_Efficiency();
+			print();
+//			Log.printLine("\n"+efficiency.get(0).get(9));
 			while(!Completed()) {
 				int pmin=0;
 				int effmax=0;
@@ -237,10 +274,12 @@ public class ScheduleTask {
 					}
 				}
 				for(int col=0;col<num_cloudlets;col++) {
-					if(efficiency.get(pmin).get(col)<efficiency.get(pmin).get(effmax)) {
+					if(efficiency.get(pmin).get(col)>efficiency.get(pmin).get(effmax)) {
 						effmax=col;
 					}
 				}
+//				Log.printLine("number ofg.printL task= "+numScheduledTask+" " +efficiency.get(pmin).get(effmax));
+				Log.printLine(pmin+" "+effmax + " "+efficiency.get(pmin).get(effmax));
 				if(efficiency.get(pmin).get(effmax)<effThreshold) {
 					availableTime.set(pmin,INT_MAX);
 					continue;
@@ -249,6 +288,7 @@ public class ScheduleTask {
 					efficiency.get(i).set(effmax,INT_MIN);
 				}
 				addTask(pmin,effmax);
+				
 			}
 			CloudSim.startSimulation();
 			List<List<Cloudlet>> newList=new ArrayList<List<Cloudlet>>();
